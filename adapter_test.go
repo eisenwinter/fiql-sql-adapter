@@ -40,6 +40,22 @@ func TestBasicSqlAndAdapter(t *testing.T) {
 	assert.Equal(t, []interface{}{"life", "hard"}, params)
 }
 
+func TestBasicSqlAndAdapterUnary(t *testing.T) {
+	m := make(FieldMapping)
+	m["ml"] = Field{
+		Db:    "mylife",
+		Alias: "ml",
+		Type:  reflect.TypeOf(""),
+	}
+	adapter := NewAdapter(m)
+	res, err := adapter.Map("ml")
+	assert.NoError(t, err)
+	sql, params, err := res.ToSql()
+	assert.NoError(t, err)
+	assert.Equal(t, `("mylife" IS NOT NULL)`, sql)
+	assert.Equal(t, []interface{}{}, params)
+}
+
 func TestBasicSqlOrAdapter(t *testing.T) {
 	m := make(FieldMapping)
 	m["ml"] = Field{

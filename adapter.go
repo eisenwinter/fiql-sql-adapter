@@ -61,8 +61,8 @@ type whereBuilder struct {
 
 func (t *whereBuilder) VisitExpressionEntered() { t.sb.WriteString("(") }
 func (t *whereBuilder) VisitExpressionLeft()    { t.sb.WriteString(")") }
-func (t *whereBuilder) VisitOperator(operator fq.OperatorDefintion) {
-	switch operator {
+func (t *whereBuilder) VisitOperator(operatorCtx fq.OperatorContext) {
+	switch operatorCtx.Operator() {
 	case fq.OperatorAND:
 		t.sb.WriteString(" AND ")
 	case fq.OperatorOR:
@@ -70,7 +70,8 @@ func (t *whereBuilder) VisitOperator(operator fq.OperatorDefintion) {
 	}
 }
 
-func (t *whereBuilder) VisitSelector(selector string) {
+func (t *whereBuilder) VisitSelector(selectorCtx fq.SelectorContext) {
+	selector := selectorCtx.Selector()
 	if fi, ok := t.fields[strings.ToLower(selector)]; ok {
 		//validate selector if viable for this query
 		switch t.delim {
@@ -90,18 +91,25 @@ func (t *whereBuilder) VisitSelector(selector string) {
 		case MariaDelimiter:
 			t.sb.WriteString("`")
 		}
-		t.lastSelector = &fi
+
+		if selectorCtx.IsUnary() {
+			t.lastSelector = nil
+			t.sb.WriteString(" IS NOT NULL")
+		} else {
+			t.lastSelector = &fi
+		}
+
 	} else {
 		t.errors = append(t.errors, fmt.Errorf("invalid selector: %s", selector))
 		t.lastSelector = nil
 	}
 
 }
-func (t *whereBuilder) VisitComparison(comparison fq.ComparisonDefintion) {
+func (t *whereBuilder) VisitComparison(comparisonCtx fq.ComparisonContext) {
 	if t.lastSelector == nil {
 		return
 	}
-	switch comparison {
+	switch comparisonCtx.Comparison() {
 	case fq.ComparisonEq:
 		if t.lastSelector.Type == stringType {
 			t.sb.WriteString(" LIKE ")
@@ -129,7 +137,7 @@ func (t *whereBuilder) isCompatibleType(from, to reflect.Type) bool {
 	return from == to
 }
 
-func (t *whereBuilder) VisitArgument(argument string, valueCtx fq.ValueContext) {
+func (t *whereBuilder) VisitArgument(argumentCtx fq.ArgumentContext) {
 	if t.lastSelector == nil {
 		return
 	}
@@ -138,10 +146,10 @@ func (t *whereBuilder) VisitArgument(argument string, valueCtx fq.ValueContext) 
 	s := false
 	//validate if argument matches type in db
 	//use t.lastSelector for this
-	switch valueCtx.ValueRecommendation() {
+	switch argumentCtx.ValueRecommendation() {
 	case fq.ValueRecommendationDateTime:
 		if t.isCompatibleType(timeType, exp) {
-			time, err := valueCtx.AsTime()
+			time, err := argumentCtx.AsTime()
 			if err != nil {
 				t.errors = append(t.errors, fmt.Errorf("could not convert type: %w", err))
 				t.lastSelector = nil
@@ -149,12 +157,12 @@ func (t *whereBuilder) VisitArgument(argument string, valueCtx fq.ValueContext) 
 			}
 			t.params = append(t.params, time)
 		} else {
-			t.errors = append(t.errors, fmt.Errorf("invalid type of argument: %s", argument))
+			t.errors = append(t.errors, fmt.Errorf("invalid type of argument: %s", argumentCtx.AsString()))
 			return
 		}
 	case fq.ValueRecommendationNumber:
 		if t.isCompatibleType(intType, exp) {
-			number, err := valueCtx.AsInt()
+			number, err := argumentCtx.AsInt()
 			if err != nil {
 				t.errors = append(t.errors, fmt.Errorf("could not convert type: %w", err))
 				t.lastSelector = nil
@@ -162,7 +170,7 @@ func (t *whereBuilder) VisitArgument(argument string, valueCtx fq.ValueContext) 
 			}
 			t.params = append(t.params, number)
 		} else if t.isCompatibleType(float64Type, exp) {
-			number, err := valueCtx.AsFloat64()
+			number, err := argumentCtx.AsFloat64()
 			if err != nil {
 				t.errors = append(t.errors, fmt.Errorf("could not convert type: %w", err))
 				t.lastSelector = nil
@@ -170,12 +178,12 @@ func (t *whereBuilder) VisitArgument(argument string, valueCtx fq.ValueContext) 
 			}
 			t.params = append(t.params, number)
 		} else {
-			t.errors = append(t.errors, fmt.Errorf("invalid type of argument: %s", argument))
+			t.errors = append(t.errors, fmt.Errorf("invalid type of argument: %s", argumentCtx.AsString()))
 			return
 		}
 	case fq.ValueRecommendationDuration:
 		if t.isCompatibleType(timeType, exp) {
-			time, err := valueCtx.AsDuration()
+			time, err := argumentCtx.AsDuration()
 			if err != nil {
 				t.errors = append(t.errors, fmt.Errorf("could not convert type: %w", err))
 				t.lastSelector = nil
@@ -183,18 +191,18 @@ func (t *whereBuilder) VisitArgument(argument string, valueCtx fq.ValueContext) 
 			}
 			t.params = append(t.params, time)
 		} else {
-			t.errors = append(t.errors, fmt.Errorf("invalid type of argument: %s", argument))
+			t.errors = append(t.errors, fmt.Errorf("invalid type of argument: %s", argumentCtx.AsString()))
 			return
 		}
 	default:
-		t.params = append(t.params, valueCtx.AsString())
+		t.params = append(t.params, argumentCtx.AsString())
 		s = true
 	}
 
-	if s && (valueCtx.StartsWithWildcard() || valueCtx.EndsWithWildcard()) {
+	if s && (argumentCtx.StartsWithWildcard() || argumentCtx.EndsWithWildcard()) {
 		t.sb.WriteString("CONCAT(")
 	}
-	if s && valueCtx.StartsWithWildcard() {
+	if s && argumentCtx.StartsWithWildcard() {
 		t.sb.WriteString("'%',")
 	}
 	switch t.paramStyle {
@@ -207,10 +215,10 @@ func (t *whereBuilder) VisitArgument(argument string, valueCtx fq.ValueContext) 
 	case StandardParamStyle:
 		t.sb.WriteString("?")
 	}
-	if s && valueCtx.EndsWithWildcard() {
+	if s && argumentCtx.EndsWithWildcard() {
 		t.sb.WriteString(",'%'")
 	}
-	if s && (valueCtx.StartsWithWildcard() || valueCtx.EndsWithWildcard()) {
+	if s && (argumentCtx.StartsWithWildcard() || argumentCtx.EndsWithWildcard()) {
 		t.sb.WriteString(")")
 	}
 

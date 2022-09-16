@@ -3,7 +3,7 @@ module github.com/eisenwinter/fiql-sql-adapter
 go 1.19
 
 require (
-	github.com/eisenwinter/fiql-parser v0.0.0-20220916070522-84ac6b6cc6d0
+	github.com/eisenwinter/fiql-parser v0.1.1
 	github.com/stretchr/testify v1.8.0
 )
 

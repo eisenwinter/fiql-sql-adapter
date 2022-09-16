@@ -5,6 +5,12 @@ github.com/eisenwinter/fiql-parser v0.0.0-20220915194358-19b5cf7e2c83 h1:aIvxcTe
 github.com/eisenwinter/fiql-parser v0.0.0-20220915194358-19b5cf7e2c83/go.mod h1:U/LHyGJ3kbV9RE+7Fy/0dEVevqQfAIfRip8PkaqSHe8=
 github.com/eisenwinter/fiql-parser v0.0.0-20220916070522-84ac6b6cc6d0 h1:KR84DokUDKZO/aF2vZN8kXBZzP61tWkDlqHdc/6a6d8=
 github.com/eisenwinter/fiql-parser v0.0.0-20220916070522-84ac6b6cc6d0/go.mod h1:U/LHyGJ3kbV9RE+7Fy/0dEVevqQfAIfRip8PkaqSHe8=
+github.com/eisenwinter/fiql-parser v0.0.0-20220916192656-79c4aa6f2e83 h1:if1CpXiAzpE0WYDfrrC4LDPQvEYsmNmPwMS/us25ccw=
+github.com/eisenwinter/fiql-parser v0.0.0-20220916192656-79c4aa6f2e83/go.mod h1:U/LHyGJ3kbV9RE+7Fy/0dEVevqQfAIfRip8PkaqSHe8=
+github.com/eisenwinter/fiql-parser v0.1.0 h1:RqFA8VboRjUw5DSJapJ8+BltCOxKUGsJpoB7i5ZFtfY=
+github.com/eisenwinter/fiql-parser v0.1.0/go.mod h1:U/LHyGJ3kbV9RE+7Fy/0dEVevqQfAIfRip8PkaqSHe8=
+github.com/eisenwinter/fiql-parser v0.1.1 h1:beXeRU/dRqCa4mnYdRPiZRYNWURaC6UNCgjFtfBwFH8=
+github.com/eisenwinter/fiql-parser v0.1.1/go.mod h1:U/LHyGJ3kbV9RE+7Fy/0dEVevqQfAIfRip8PkaqSHe8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
