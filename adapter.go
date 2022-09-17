@@ -1,6 +1,7 @@
 package fiqlsqladapter
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -33,13 +34,51 @@ const MssqlDelimiter DelimiterStyle = "[]"
 const MariaDelimiter DelimiterStyle = "``"
 const NoDelimiter DelimiterStyle = ""
 
-type AggregateError struct {
-	errors []error
-	msg    string
+func delimitBuilder(style DelimiterStyle, col string, sb *strings.Builder) {
+	switch style {
+	case MssqlDelimiter:
+		sb.WriteString("[")
+	case MariaDelimiter:
+		sb.WriteString("`")
+	default:
+		sb.WriteString(`"`)
+	}
+	sb.WriteString(col)
+	switch style {
+	case MssqlDelimiter:
+		sb.WriteString("]")
+	case MariaDelimiter:
+		sb.WriteString("`")
+	default:
+		sb.WriteString(`"`)
+	}
 }
 
-func (a *AggregateError) Error() string {
-	return a.msg
+func parameterBuilder(style ParamStyle, len int, sb *strings.Builder) {
+	switch style {
+	case PgParamStyle:
+		sb.WriteString("$")
+		sb.WriteString(strconv.Itoa(len))
+	case MssqlParamStyle:
+		sb.WriteString("@")
+		sb.WriteString(strconv.Itoa(len))
+	case StandardParamStyle:
+		sb.WriteString("?")
+	}
+}
+
+func concatErrrors(errs []error) error {
+	switch len(errs) {
+	case 0:
+		return nil
+	case 1:
+		return errs[0]
+	}
+	err := errs[0]
+	for _, e := range errs[1:] {
+		err = fmt.Errorf("%w", e)
+	}
+	return err
 }
 
 type Adapter struct {
@@ -73,25 +112,7 @@ func (t *whereBuilder) VisitOperator(operatorCtx fq.OperatorContext) {
 func (t *whereBuilder) VisitSelector(selectorCtx fq.SelectorContext) {
 	selector := selectorCtx.Selector()
 	if fi, ok := t.fields[strings.ToLower(selector)]; ok {
-		//validate selector if viable for this query
-		switch t.delim {
-		case StandardSqlDelimiter:
-			t.sb.WriteString(`"`)
-		case MssqlDelimiter:
-			t.sb.WriteString("[")
-		case MariaDelimiter:
-			t.sb.WriteString("`")
-		}
-		t.sb.WriteString(fi.Db)
-		switch t.delim {
-		case StandardSqlDelimiter:
-			t.sb.WriteString(`"`)
-		case MssqlDelimiter:
-			t.sb.WriteString("]")
-		case MariaDelimiter:
-			t.sb.WriteString("`")
-		}
-
+		delimitBuilder(t.delim, fi.Db, &t.sb)
 		if selectorCtx.IsUnary() {
 			t.lastSelector = nil
 			t.sb.WriteString(" IS NOT NULL")
@@ -137,66 +158,72 @@ func (t *whereBuilder) isCompatibleType(from, to reflect.Type) bool {
 	return from == to
 }
 
+func (t *whereBuilder) negotiateArgumentType(args *fq.ArgumentContext) (bool, error) {
+	exp := t.lastSelector.Type
+	if args.ValueRecommendation() == fq.ValueRecommendationString && exp == stringType {
+		//its safe to assume that string is a string
+		t.params = append(t.params, args.AsString())
+		return true, nil
+	}
+
+	switch args.ValueRecommendation() {
+	case fq.ValueRecommendationDateTime:
+		if t.isCompatibleType(timeType, exp) {
+			time, err := args.AsTime()
+			if err != nil {
+				return false, err
+			}
+			t.params = append(t.params, time)
+			return false, nil
+		}
+		break
+	case fq.ValueRecommendationDuration:
+		if t.isCompatibleType(timeType, exp) {
+			time, err := args.AsDuration()
+			if err != nil {
+				return false, err
+			}
+			t.params = append(t.params, time)
+			return false, nil
+		}
+		break
+	case fq.ValueRecommendationNumber:
+		// is it int
+		if t.isCompatibleType(intType, exp) {
+			i, err := args.AsInt()
+			if err != nil {
+				return false, err
+			}
+			t.params = append(t.params, i)
+			return false, nil
+		}
+		if t.isCompatibleType(float64Type, exp) {
+			f, err := args.AsFloat64()
+			if err != nil {
+				return false, err
+			}
+			t.params = append(t.params, f)
+			return false, nil
+		}
+		break
+	}
+
+	if exp == stringType {
+		t.params = append(t.params, args.AsString())
+		return true, nil
+	}
+	return false, fmt.Errorf("invalid type of argument: %s", args.AsString())
+}
+
 func (t *whereBuilder) VisitArgument(argumentCtx fq.ArgumentContext) {
 	if t.lastSelector == nil {
 		return
 	}
-	exp := t.lastSelector.Type
-	fmt.Printf("needs to be of type %v", exp)
-	s := false
-	//validate if argument matches type in db
-	//use t.lastSelector for this
-	switch argumentCtx.ValueRecommendation() {
-	case fq.ValueRecommendationDateTime:
-		if t.isCompatibleType(timeType, exp) {
-			time, err := argumentCtx.AsTime()
-			if err != nil {
-				t.errors = append(t.errors, fmt.Errorf("could not convert type: %w", err))
-				t.lastSelector = nil
-				return
-			}
-			t.params = append(t.params, time)
-		} else {
-			t.errors = append(t.errors, fmt.Errorf("invalid type of argument: %s", argumentCtx.AsString()))
-			return
-		}
-	case fq.ValueRecommendationNumber:
-		if t.isCompatibleType(intType, exp) {
-			number, err := argumentCtx.AsInt()
-			if err != nil {
-				t.errors = append(t.errors, fmt.Errorf("could not convert type: %w", err))
-				t.lastSelector = nil
-				return
-			}
-			t.params = append(t.params, number)
-		} else if t.isCompatibleType(float64Type, exp) {
-			number, err := argumentCtx.AsFloat64()
-			if err != nil {
-				t.errors = append(t.errors, fmt.Errorf("could not convert type: %w", err))
-				t.lastSelector = nil
-				return
-			}
-			t.params = append(t.params, number)
-		} else {
-			t.errors = append(t.errors, fmt.Errorf("invalid type of argument: %s", argumentCtx.AsString()))
-			return
-		}
-	case fq.ValueRecommendationDuration:
-		if t.isCompatibleType(timeType, exp) {
-			time, err := argumentCtx.AsDuration()
-			if err != nil {
-				t.errors = append(t.errors, fmt.Errorf("could not convert type: %w", err))
-				t.lastSelector = nil
-				return
-			}
-			t.params = append(t.params, time)
-		} else {
-			t.errors = append(t.errors, fmt.Errorf("invalid type of argument: %s", argumentCtx.AsString()))
-			return
-		}
-	default:
-		t.params = append(t.params, argumentCtx.AsString())
-		s = true
+	s, err := t.negotiateArgumentType(&argumentCtx)
+	if err != nil {
+		t.lastSelector = nil
+		t.errors = append(t.errors, fmt.Errorf("invalid type of argument: %s", argumentCtx.AsString()))
+		return
 	}
 
 	if s && (argumentCtx.StartsWithWildcard() || argumentCtx.EndsWithWildcard()) {
@@ -205,16 +232,7 @@ func (t *whereBuilder) VisitArgument(argumentCtx fq.ArgumentContext) {
 	if s && argumentCtx.StartsWithWildcard() {
 		t.sb.WriteString("'%',")
 	}
-	switch t.paramStyle {
-	case PgParamStyle:
-		t.sb.WriteString("$")
-		t.sb.WriteString(strconv.Itoa(len(t.params)))
-	case MssqlParamStyle:
-		t.sb.WriteString("@")
-		t.sb.WriteString(strconv.Itoa(len(t.params)))
-	case StandardParamStyle:
-		t.sb.WriteString("?")
-	}
+	parameterBuilder(t.paramStyle, len(t.params), &t.sb)
 	if s && argumentCtx.EndsWithWildcard() {
 		t.sb.WriteString(",'%'")
 	}
@@ -224,8 +242,7 @@ func (t *whereBuilder) VisitArgument(argumentCtx fq.ArgumentContext) {
 
 }
 
-func (a *Adapter) Map(query string) (*WherePredicate, error) {
-	//ew
+func (a *Adapter) Where(query string) (*WherePredicate, error) {
 	ast, err := a.parser.Parse(query)
 	if err != nil {
 		return nil, err
@@ -239,12 +256,42 @@ func (a *Adapter) Map(query string) (*WherePredicate, error) {
 	}
 	ast.Accept(&wb)
 	if len(wb.errors) > 0 {
-		return nil, fmt.Errorf("error occurred: %+v", wb.errors)
+		return nil, concatErrrors(wb.errors)
 	}
 	return &WherePredicate{
 		sql:    wb.sb.String(),
 		params: wb.params,
 	}, nil
+}
+
+func (a *Adapter) OrderBy(query string) (*OrderByClause, error) {
+	if query == "" {
+		return &OrderByClause{}, nil
+	}
+	var sb strings.Builder
+	s := strings.Split(query, ";")
+	for i, v := range s {
+		if len(v) > 1 {
+			if f, ok := a.fields[strings.ToLower(v[1:])]; ok {
+				delimitBuilder(a.delim, f.Db, &sb)
+				if v[0] == '+' {
+					sb.WriteString(" ASC")
+					if i != len(s)-1 {
+						sb.WriteString(", ")
+					}
+					continue
+				} else if v[0] == '-' {
+					sb.WriteString(" DESC")
+					if i != len(s)-1 {
+						sb.WriteString(", ")
+					}
+					continue
+				}
+			}
+		}
+		return nil, errors.New("invalid order by selector")
+	}
+	return &OrderByClause{sql: sb.String()}, nil
 }
 
 func WithDialectMSSQL() func(*Adapter) {
@@ -340,6 +387,18 @@ type WherePredicate struct {
 // to satisfy sqlizer https://pkg.go.dev/github.com/masterminds/squirrel#Sqlizer
 func (w *WherePredicate) ToSql() (string, []interface{}, error) {
 	return w.sql, w.params, nil
+}
+
+type OrderByClause struct {
+	sql string
+}
+
+func (o *OrderByClause) ToSql() (string, []interface{}, error) {
+	return o.sql, nil, nil
+}
+
+func (o *OrderByClause) String() string {
+	return o.sql
 }
 
 type MappingBuilder struct {

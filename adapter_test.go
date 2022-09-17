@@ -16,7 +16,7 @@ func TestBasicSqlAdapter(t *testing.T) {
 		Type:  reflect.TypeOf(""),
 	}
 	adapter := NewAdapter(m)
-	res, err := adapter.Map("ml==life")
+	res, err := adapter.Where("ml==life")
 	assert.NoError(t, err)
 	sql, params, err := res.ToSql()
 	assert.NoError(t, err)
@@ -32,7 +32,7 @@ func TestBasicSqlAndAdapter(t *testing.T) {
 		Type:  reflect.TypeOf(""),
 	}
 	adapter := NewAdapter(m)
-	res, err := adapter.Map("ml==life;ml==hard")
+	res, err := adapter.Where("ml==life;ml==hard")
 	assert.NoError(t, err)
 	sql, params, err := res.ToSql()
 	assert.NoError(t, err)
@@ -48,7 +48,7 @@ func TestBasicSqlAndAdapterUnary(t *testing.T) {
 		Type:  reflect.TypeOf(""),
 	}
 	adapter := NewAdapter(m)
-	res, err := adapter.Map("ml")
+	res, err := adapter.Where("ml")
 	assert.NoError(t, err)
 	sql, params, err := res.ToSql()
 	assert.NoError(t, err)
@@ -64,7 +64,7 @@ func TestBasicSqlOrAdapter(t *testing.T) {
 		Type:  reflect.TypeOf(""),
 	}
 	adapter := NewAdapter(m)
-	res, err := adapter.Map("ml==life,ml==hard")
+	res, err := adapter.Where("ml==life,ml==hard")
 	assert.NoError(t, err)
 	sql, params, err := res.ToSql()
 	assert.NoError(t, err)
@@ -85,7 +85,7 @@ func TestBasicSqlNestedAdapter(t *testing.T) {
 		Type:  reflect.TypeOf(""),
 	}
 	adapter := NewAdapter(m)
-	res, err := adapter.Map("(ml==life;lo==me),(ml==hard;lo==you)")
+	res, err := adapter.Where("(ml==life;lo==me),(ml==hard;lo==you)")
 	assert.NoError(t, err)
 	sql, params, err := res.ToSql()
 	assert.NoError(t, err)
@@ -106,7 +106,7 @@ func TestBasicSqlNestedAdapterMSSQL(t *testing.T) {
 		Type:  reflect.TypeOf(""),
 	}
 	adapter := NewAdapter(m, WithDialectMSSQL())
-	res, err := adapter.Map("(ml==life;lo==me),(ml==hard;lo==you)")
+	res, err := adapter.Where("(ml==life;lo==me),(ml==hard;lo==you)")
 	assert.NoError(t, err)
 	sql, params, err := res.ToSql()
 	assert.NoError(t, err)
@@ -127,7 +127,7 @@ func TestBasicSqlNestedAdapterPostGres(t *testing.T) {
 		Type:  reflect.TypeOf(""),
 	}
 	adapter := NewAdapter(m, WithDialectPostgres())
-	res, err := adapter.Map("(ml==life;lo==me),(ml==hard;lo==you)")
+	res, err := adapter.Where("(ml==life;lo==me),(ml==hard;lo==you)")
 	assert.NoError(t, err)
 	sql, params, err := res.ToSql()
 	assert.NoError(t, err)
@@ -143,7 +143,7 @@ func TestBasicWildCardLeading(t *testing.T) {
 		Type:  reflect.TypeOf(""),
 	}
 	adapter := NewAdapter(m, WithDialectMSSQL())
-	res, err := adapter.Map("ml==*life")
+	res, err := adapter.Where("ml==*life")
 	assert.NoError(t, err)
 	sql, _, err := res.ToSql()
 	assert.NoError(t, err)
@@ -158,7 +158,7 @@ func TestBasicWildCardTrailing(t *testing.T) {
 		Type:  reflect.TypeOf(""),
 	}
 	adapter := NewAdapter(m, WithDialectMSSQL())
-	res, err := adapter.Map("ml==life*")
+	res, err := adapter.Where("ml==life*")
 	assert.NoError(t, err)
 	sql, _, err := res.ToSql()
 	assert.NoError(t, err)
@@ -179,7 +179,7 @@ type myFunnyRowStruct struct {
 
 func TestFromStructBasic(t *testing.T) {
 	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
-	res, err := adp.Map("id==1")
+	res, err := adp.Where("id==1")
 	assert.NoError(t, err)
 	if err != nil {
 		return
@@ -194,7 +194,7 @@ func TestFromStructBasic(t *testing.T) {
 
 func TestFromStructBasicMultiple(t *testing.T) {
 	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
-	res, err := adp.Map("id==1;(cre=lt=-P1D,upd=gt=2022-09-16T10:15:04Z)")
+	res, err := adp.Where("id==1;(cre=lt=-P1D,upd=gt=2022-09-16T10:15:04Z)")
 	assert.NoError(t, err)
 	if err != nil {
 		return
@@ -209,7 +209,7 @@ func TestFromStructBasicMultiple(t *testing.T) {
 
 func TestFromStructFloatsAndInts(t *testing.T) {
 	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
-	res, err := adp.Map("id==1;fee=le=0.0;amt=gt=0")
+	res, err := adp.Where("id==1;fee=le=0.0;amt=gt=0")
 	assert.NoError(t, err)
 	if err != nil {
 		return
@@ -225,19 +225,19 @@ func TestFromStructFloatsAndInts(t *testing.T) {
 
 func TestFromStructSecret(t *testing.T) {
 	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
-	_, err := adp.Map("secret==1")
+	_, err := adp.Where("secret==1")
 	assert.Error(t, err)
 }
 
 func TestFromStructBlocked(t *testing.T) {
 	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
-	_, err := adp.Map("blocked==1")
+	_, err := adp.Where("blocked==1")
 	assert.Error(t, err)
 }
 
 func TestFromStructWildCardLeading(t *testing.T) {
 	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
-	res, err := adp.Map("tx==*001020")
+	res, err := adp.Where("tx==*001020")
 	assert.NoError(t, err)
 	if err != nil {
 		return
@@ -252,7 +252,7 @@ func TestFromStructWildCardLeading(t *testing.T) {
 
 func TestFromStructWildCardTrailing(t *testing.T) {
 	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
-	res, err := adp.Map("tx==001020*")
+	res, err := adp.Where("tx==001020*")
 	assert.NoError(t, err)
 	if err != nil {
 		return
@@ -267,7 +267,7 @@ func TestFromStructWildCardTrailing(t *testing.T) {
 
 func TestFromStructWildCard(t *testing.T) {
 	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
-	res, err := adp.Map("tx==*001020*")
+	res, err := adp.Where("tx==*001020*")
 	assert.NoError(t, err)
 	if err != nil {
 		return
@@ -278,4 +278,67 @@ func TestFromStructWildCard(t *testing.T) {
 		return
 	}
 	assert.Equal(t, `("Tx" LIKE CONCAT('%',$1,'%'))`, s)
+}
+
+func TestMappingBuilder(t *testing.T) {
+	b := NewMappingBuilder().AddStringMapping("columnA", "a").Build()
+	assert.Equal(t, FieldMapping{"a": Field{Db: "columnA", Alias: "a", Type: stringType}}, b)
+}
+
+func TestMappingMultipleBuilder(t *testing.T) {
+	b := NewMappingBuilder().AddStringMapping("columnA", "a").AddFloatMapping("columnB", "b").AddDateMapping("columnC", "c").Build()
+	assert.Equal(t, FieldMapping{"a": Field{Db: "columnA", Alias: "a", Type: stringType}, "b": Field{Db: "columnB", Alias: "b", Type: float64Type}, "c": Field{Db: "columnC", Alias: "c", Type: timeType}}, b)
+}
+
+func TestOrderByAsc(t *testing.T) {
+	input := "+a"
+	b := NewMappingBuilder().AddStringMapping("columnA", "a").Build()
+	p := NewAdapter(b, WithDialectPostgres())
+	res, err := p.OrderBy(input)
+	assert.NoError(t, err)
+	assert.Equal(t, `"columnA" ASC`, res.String())
+}
+
+func TestOrderByDesc(t *testing.T) {
+	input := "-a"
+	b := NewMappingBuilder().AddStringMapping("columnA", "a").Build()
+	p := NewAdapter(b, WithDialectPostgres())
+	res, err := p.OrderBy(input)
+	assert.NoError(t, err)
+	assert.Equal(t, `"columnA" DESC`, res.String())
+}
+
+func TestOrderByNoPrefix(t *testing.T) {
+	input := "a"
+	b := NewMappingBuilder().AddStringMapping("columnA", "a").Build()
+	p := NewAdapter(b, WithDialectPostgres())
+	_, err := p.OrderBy(input)
+	assert.Error(t, err)
+}
+
+func TestOrderByMixed(t *testing.T) {
+	input := "-a;+b"
+	b := NewMappingBuilder().AddStringMapping("columnA", "a").AddFloatMapping("columnB", "b").Build()
+	p := NewAdapter(b, WithDialectMariaDB())
+	res, err := p.OrderBy(input)
+	assert.NoError(t, err)
+	assert.Equal(t, "`columnA` DESC, `columnB` ASC", res.String())
+}
+
+func TestInvalidDuration(t *testing.T) {
+	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
+	_, err := adp.Where("cre=lt=-PAAS")
+	assert.Error(t, err)
+}
+
+func TestInvalidDate(t *testing.T) {
+	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
+	_, err := adp.Where("cre=lt=2022-91-91")
+	assert.Error(t, err)
+}
+
+func TestInvalidDateCoercion(t *testing.T) {
+	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectPostgres())
+	_, err := adp.Where("cre==2022-91-91")
+	assert.Error(t, err)
 }
