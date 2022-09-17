@@ -23,11 +23,15 @@ func concatErrrors(errs []error) error {
 	return err
 }
 
+// Adapter adapter is a fiql2sql adapter
+// one adapter per table is needed unless all tables
+// carry the same columns - but i would not recommend sharing
+// adapters for multiple  tables
 type Adapter struct {
 	fields     FieldMapping
 	parser     *fq.Parser
-	delim      DelimiterStyle
-	paramStyle ParamStyle
+	delim      delimiterStyle
+	paramStyle paramStyle
 }
 
 type whereBuilder struct {
@@ -36,8 +40,8 @@ type whereBuilder struct {
 	errors       []error
 	lastSelector *Field
 	fields       FieldMapping
-	delim        DelimiterStyle
-	paramStyle   ParamStyle
+	delim        delimiterStyle
+	paramStyle   paramStyle
 }
 
 func (t *whereBuilder) VisitExpressionEntered() { t.sb.WriteString("(") }
@@ -184,6 +188,7 @@ func (t *whereBuilder) VisitArgument(argumentCtx fq.ArgumentContext) {
 
 }
 
+// Where generates a where predicate from a given fiql query
 func (a *Adapter) Where(query string) (*WherePredicate, error) {
 	ast, err := a.parser.Parse(query)
 	if err != nil {
@@ -206,6 +211,8 @@ func (a *Adapter) Where(query string) (*WherePredicate, error) {
 	}, nil
 }
 
+// OrderBy generates a order by clause from a given query
+// this is no fiql but rather the format (+/-)ALIAS[;(+/-)ALIAS]*
 func (a *Adapter) OrderBy(query string) (*OrderByClause, error) {
 	if query == "" {
 		return &OrderByClause{}, nil
@@ -236,41 +243,22 @@ func (a *Adapter) OrderBy(query string) (*OrderByClause, error) {
 	return &OrderByClause{sql: sb.String()}, nil
 }
 
+// NewAdapter returns a new fiql adapter for the given field mapping
+// use the MappingBuilder to create field mapping
 func NewAdapter(mapping FieldMapping, options ...func(*Adapter)) *Adapter {
-	adapter := &Adapter{fields: mapping, parser: fq.NewParser(), paramStyle: StandardParamStyle, delim: StandardSqlDelimiter}
+	adapter := &Adapter{fields: mapping, parser: fq.NewParser(), paramStyle: standardParamStyle, delim: standardSqlDelimiter}
 	for _, o := range options {
 		o(adapter)
 	}
 	return adapter
 }
 
+// NewAdapterFor creates a new adapter from struct tags of the typeDef argument
 func NewAdapterFor(typeDef interface{}, options ...func(*Adapter)) *Adapter {
 	mapping := tagsFromStruct(typeDef)
-	adapter := &Adapter{fields: mapping, parser: fq.NewParser(), paramStyle: StandardParamStyle, delim: StandardSqlDelimiter}
+	adapter := &Adapter{fields: mapping, parser: fq.NewParser(), paramStyle: standardParamStyle, delim: standardSqlDelimiter}
 	for _, o := range options {
 		o(adapter)
 	}
 	return adapter
-}
-
-type WherePredicate struct {
-	sql    string
-	params []interface{}
-}
-
-// to satisfy sqlizer https://pkg.go.dev/github.com/masterminds/squirrel#Sqlizer
-func (w *WherePredicate) ToSql() (string, []interface{}, error) {
-	return w.sql, w.params, nil
-}
-
-type OrderByClause struct {
-	sql string
-}
-
-func (o *OrderByClause) ToSql() (string, []interface{}, error) {
-	return o.sql, nil, nil
-}
-
-func (o *OrderByClause) String() string {
-	return o.sql
 }

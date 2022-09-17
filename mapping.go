@@ -12,23 +12,29 @@ var timeType = reflect.TypeOf(time.Time{})
 var float64Type = reflect.TypeOf(float64(0))
 var intType = reflect.TypeOf(int(0))
 
+// Field is a fiql field to database column mapping
 type Field struct {
 	Db    string
 	Alias string
 	Type  reflect.Type
 }
+
+// FieldMapping is a table mapping of fields
 type FieldMapping map[string]Field
 
+// MappingBuilder helps build FieldMappings manually if no struct tags are used
 type MappingBuilder struct {
 	fm FieldMapping
 }
 
+// NewMappingBuilder returns a new instance of a MappingBuilder
 func NewMappingBuilder() *MappingBuilder {
 	return &MappingBuilder{
 		fm: make(FieldMapping),
 	}
 }
 
+// AddStringMapping adds a column to fiql selector mapping for a string column
 func (b *MappingBuilder) AddStringMapping(column, selector string) *MappingBuilder {
 	b.fm[strings.ToLower(selector)] = Field{
 		Alias: selector,
@@ -38,6 +44,7 @@ func (b *MappingBuilder) AddStringMapping(column, selector string) *MappingBuild
 	return b
 }
 
+// AddDateMapping adds a column to fiql selector mapping for a date(time) column
 func (b *MappingBuilder) AddDateMapping(column, selector string) *MappingBuilder {
 	b.fm[strings.ToLower(selector)] = Field{
 		Alias: selector,
@@ -47,6 +54,7 @@ func (b *MappingBuilder) AddDateMapping(column, selector string) *MappingBuilder
 	return b
 }
 
+// AddFloatMapping adds a column to fiql selector mapping for a decimal column
 func (b *MappingBuilder) AddFloatMapping(column, selector string) *MappingBuilder {
 	b.fm[strings.ToLower(selector)] = Field{
 		Alias: selector,
@@ -56,6 +64,7 @@ func (b *MappingBuilder) AddFloatMapping(column, selector string) *MappingBuilde
 	return b
 }
 
+// AddIntMapping adds a column to fiql selector mapping for a numeric column
 func (b *MappingBuilder) AddIntMapping(column, selector string) *MappingBuilder {
 	b.fm[strings.ToLower(selector)] = Field{
 		Alias: selector,
@@ -65,6 +74,7 @@ func (b *MappingBuilder) AddIntMapping(column, selector string) *MappingBuilder 
 	return b
 }
 
+// Build returns the generated
 func (b *MappingBuilder) Build() FieldMapping {
 	return b.fm
 }

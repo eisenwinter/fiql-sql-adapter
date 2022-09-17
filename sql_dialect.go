@@ -5,76 +5,94 @@ import (
 	"strings"
 )
 
-type ParamStyle string
+// paramStyle defines how parameters look like in the selected sql dialect
+type paramStyle string
 
-const PgParamStyle ParamStyle = "$"
-const MssqlParamStyle ParamStyle = "@"
-const StandardParamStyle ParamStyle = "?"
+// dollarParamStyle is used by postgres (and sqlite)
+const dollarParamStyle paramStyle = "$"
 
-type DelimiterStyle string
+// atParamStyle is used by mssql (and sqlite yeah really ...)
+const atParamStyle paramStyle = "@"
 
-const StandardSqlDelimiter DelimiterStyle = "\"\""
-const MssqlDelimiter DelimiterStyle = "[]"
-const MariaDelimiter DelimiterStyle = "``"
-const NoDelimiter DelimiterStyle = ""
+// standardParamStyle is the standard ? (and yeah sqlite supports that too...)
+const standardParamStyle paramStyle = "?"
 
-func delimitBuilder(style DelimiterStyle, col string, sb *strings.Builder) {
+// delimiterStyle defines the sql column delimiter
+type delimiterStyle string
+
+// standardSqlDelimiter as defined in the SQL92 standard
+const standardSqlDelimiter delimiterStyle = "\"\""
+
+// angleBracketDelimiter is used by mssql
+const angleBracketDelimiter delimiterStyle = "[]"
+
+// backtickDelimiter is used by mariadb and mysql
+const backtickDelimiter delimiterStyle = "``"
+
+// noDelimiter simply means none
+const noDelimiter delimiterStyle = ""
+
+func delimitBuilder(style delimiterStyle, col string, sb *strings.Builder) {
 	switch style {
-	case MssqlDelimiter:
+	case angleBracketDelimiter:
 		sb.WriteString("[")
-	case MariaDelimiter:
+	case backtickDelimiter:
 		sb.WriteString("`")
 	default:
 		sb.WriteString(`"`)
 	}
 	sb.WriteString(col)
 	switch style {
-	case MssqlDelimiter:
+	case angleBracketDelimiter:
 		sb.WriteString("]")
-	case MariaDelimiter:
+	case backtickDelimiter:
 		sb.WriteString("`")
 	default:
 		sb.WriteString(`"`)
 	}
 }
 
-func parameterBuilder(style ParamStyle, len int, sb *strings.Builder) {
+func parameterBuilder(style paramStyle, len int, sb *strings.Builder) {
 	switch style {
-	case PgParamStyle:
+	case dollarParamStyle:
 		sb.WriteString("$")
 		sb.WriteString(strconv.Itoa(len))
-	case MssqlParamStyle:
+	case atParamStyle:
 		sb.WriteString("@")
 		sb.WriteString(strconv.Itoa(len))
-	case StandardParamStyle:
+	case standardParamStyle:
 		sb.WriteString("?")
 	}
 }
 
+// WithDialectMSSQL configures MSSQL delimiters and params
 func WithDialectMSSQL() func(*Adapter) {
 	return func(a *Adapter) {
-		a.delim = MssqlDelimiter
-		a.paramStyle = MssqlParamStyle
+		a.delim = angleBracketDelimiter
+		a.paramStyle = atParamStyle
 	}
 }
 
+// WithDialectSQLite configures SQLite delimiters and params
 func WithDialectSQLite() func(*Adapter) {
 	return func(a *Adapter) {
-		a.delim = StandardSqlDelimiter
-		a.paramStyle = PgParamStyle
+		a.delim = standardSqlDelimiter
+		a.paramStyle = dollarParamStyle
 	}
 }
 
+// WithDialectPostgres configures Postgres delimiters and params
 func WithDialectPostgres() func(*Adapter) {
 	return func(a *Adapter) {
-		a.delim = StandardSqlDelimiter
-		a.paramStyle = PgParamStyle
+		a.delim = standardSqlDelimiter
+		a.paramStyle = dollarParamStyle
 	}
 }
 
+// WithDialectMariaDB configures MariaDB / MySql delimiters and params
 func WithDialectMariaDB() func(*Adapter) {
 	return func(a *Adapter) {
-		a.delim = MariaDelimiter
-		a.paramStyle = StandardParamStyle
+		a.delim = backtickDelimiter
+		a.paramStyle = standardParamStyle
 	}
 }
