@@ -4,68 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
-	"time"
 
 	fq "github.com/eisenwinter/fiql-parser"
 )
-
-var stringType = reflect.TypeOf("")
-var timeType = reflect.TypeOf(time.Time{})
-
-var float64Type = reflect.TypeOf(float64(0))
-var intType = reflect.TypeOf(int(0))
-
-type FieldMapping map[string]Field
-type ParamStyle string
-
-const PgParamStyle ParamStyle = "$"
-const MssqlParamStyle ParamStyle = "@"
-const StandardParamStyle ParamStyle = "?"
-
-// consider case sensitivity
-// https://en.wikibooks.org/wiki/SQL_Dialects_Reference/Print_version
-
-type DelimiterStyle string
-
-const StandardSqlDelimiter DelimiterStyle = "\"\""
-const MssqlDelimiter DelimiterStyle = "[]"
-const MariaDelimiter DelimiterStyle = "``"
-const NoDelimiter DelimiterStyle = ""
-
-func delimitBuilder(style DelimiterStyle, col string, sb *strings.Builder) {
-	switch style {
-	case MssqlDelimiter:
-		sb.WriteString("[")
-	case MariaDelimiter:
-		sb.WriteString("`")
-	default:
-		sb.WriteString(`"`)
-	}
-	sb.WriteString(col)
-	switch style {
-	case MssqlDelimiter:
-		sb.WriteString("]")
-	case MariaDelimiter:
-		sb.WriteString("`")
-	default:
-		sb.WriteString(`"`)
-	}
-}
-
-func parameterBuilder(style ParamStyle, len int, sb *strings.Builder) {
-	switch style {
-	case PgParamStyle:
-		sb.WriteString("$")
-		sb.WriteString(strconv.Itoa(len))
-	case MssqlParamStyle:
-		sb.WriteString("@")
-		sb.WriteString(strconv.Itoa(len))
-	case StandardParamStyle:
-		sb.WriteString("?")
-	}
-}
 
 func concatErrrors(errs []error) error {
 	switch len(errs) {
@@ -294,34 +236,6 @@ func (a *Adapter) OrderBy(query string) (*OrderByClause, error) {
 	return &OrderByClause{sql: sb.String()}, nil
 }
 
-func WithDialectMSSQL() func(*Adapter) {
-	return func(a *Adapter) {
-		a.delim = MssqlDelimiter
-		a.paramStyle = MssqlParamStyle
-	}
-}
-
-func WithDialectSQLite() func(*Adapter) {
-	return func(a *Adapter) {
-		a.delim = StandardSqlDelimiter
-		a.paramStyle = PgParamStyle
-	}
-}
-
-func WithDialectPostgres() func(*Adapter) {
-	return func(a *Adapter) {
-		a.delim = StandardSqlDelimiter
-		a.paramStyle = PgParamStyle
-	}
-}
-
-func WithDialectMariaDB() func(*Adapter) {
-	return func(a *Adapter) {
-		a.delim = MariaDelimiter
-		a.paramStyle = StandardParamStyle
-	}
-}
-
 func NewAdapter(mapping FieldMapping, options ...func(*Adapter)) *Adapter {
 	adapter := &Adapter{fields: mapping, parser: fq.NewParser(), paramStyle: StandardParamStyle, delim: StandardSqlDelimiter}
 	for _, o := range options {
@@ -337,46 +251,6 @@ func NewAdapterFor(typeDef interface{}, options ...func(*Adapter)) *Adapter {
 		o(adapter)
 	}
 	return adapter
-}
-
-const tagdef = "fiql"
-
-func tagsFromStruct(s interface{}) FieldMapping {
-	p := reflect.ValueOf(s)
-	v := reflect.Indirect(p)
-	if v.Kind() != reflect.Struct {
-		return map[string]Field{}
-	}
-	m := make(map[string]Field, 0)
-	for i := 0; i < v.NumField(); i++ {
-		f := v.Type().Field(i)
-		tag := f.Tag.Get(tagdef)
-		if tag == "" || tag == "-" {
-			continue
-		}
-		alias := tag
-		//peek db tag from sqlx
-		// db := f.Tag.Get("db") // okay probably shouldnt touch those for now ...
-		db := f.Name
-		if strings.Contains(tag, ",db:") {
-			s := strings.Split(tag, ",db:")
-			alias = s[0]
-			db = s[1]
-		}
-		alias = strings.ToLower(alias)
-		m[alias] = Field{
-			Alias: alias,
-			Type:  f.Type,
-			Db:    db,
-		}
-	}
-	return m
-}
-
-type Field struct {
-	Db    string
-	Alias string
-	Type  reflect.Type
 }
 
 type WherePredicate struct {
@@ -399,54 +273,4 @@ func (o *OrderByClause) ToSql() (string, []interface{}, error) {
 
 func (o *OrderByClause) String() string {
 	return o.sql
-}
-
-type MappingBuilder struct {
-	fm FieldMapping
-}
-
-func NewMappingBuilder() *MappingBuilder {
-	return &MappingBuilder{
-		fm: make(FieldMapping),
-	}
-}
-
-func (b *MappingBuilder) AddStringMapping(column, selector string) *MappingBuilder {
-	b.fm[strings.ToLower(selector)] = Field{
-		Alias: selector,
-		Db:    column,
-		Type:  stringType,
-	}
-	return b
-}
-
-func (b *MappingBuilder) AddDateMapping(column, selector string) *MappingBuilder {
-	b.fm[strings.ToLower(selector)] = Field{
-		Alias: selector,
-		Db:    column,
-		Type:  timeType,
-	}
-	return b
-}
-
-func (b *MappingBuilder) AddFloatMapping(column, selector string) *MappingBuilder {
-	b.fm[strings.ToLower(selector)] = Field{
-		Alias: selector,
-		Db:    column,
-		Type:  float64Type,
-	}
-	return b
-}
-
-func (b *MappingBuilder) AddIntMapping(column, selector string) *MappingBuilder {
-	b.fm[strings.ToLower(selector)] = Field{
-		Alias: selector,
-		Db:    column,
-		Type:  intType,
-	}
-	return b
-}
-
-func (b *MappingBuilder) Build() FieldMapping {
-	return b.fm
 }
