@@ -77,7 +77,7 @@ func WithDialectMSSQL() func(*Adapter) {
 func WithDialectSQLite() func(*Adapter) {
 	return func(a *Adapter) {
 		a.delim = standardSqlDelimiter
-		a.paramStyle = dollarParamStyle
+		a.paramStyle = standardParamStyle
 	}
 }
 
@@ -93,6 +93,20 @@ func WithDialectPostgres() func(*Adapter) {
 func WithDialectMariaDB() func(*Adapter) {
 	return func(a *Adapter) {
 		a.delim = backtickDelimiter
+		a.paramStyle = standardParamStyle
+	}
+}
+
+func WithDialectSQL92() func(*Adapter) {
+	return func(a *Adapter) {
+		a.delim = standardSqlDelimiter
+		a.paramStyle = standardParamStyle
+	}
+}
+
+func WithDialectSQL92NoDelimiter() func(*Adapter) {
+	return func(a *Adapter) {
+		a.delim = noDelimiter
 		a.paramStyle = standardParamStyle
 	}
 }
