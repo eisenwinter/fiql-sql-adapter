@@ -97,6 +97,7 @@ func WithDialectMariaDB() func(*Adapter) {
 	}
 }
 
+// WithDialectSQL92 means column delimiter is " and parameters are ?
 func WithDialectSQL92() func(*Adapter) {
 	return func(a *Adapter) {
 		a.delim = standardSqlDelimiter
@@ -104,6 +105,7 @@ func WithDialectSQL92() func(*Adapter) {
 	}
 }
 
+// WithDialectSQL92NoDelimiter means no column delimiter is used and parameters are ?
 func WithDialectSQL92NoDelimiter() func(*Adapter) {
 	return func(a *Adapter) {
 		a.delim = noDelimiter

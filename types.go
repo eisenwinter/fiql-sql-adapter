@@ -1,5 +1,7 @@
 package fiqlsqladapter
 
+import "fmt"
+
 // WherePredicate holds the content of a where predicate
 // it will always be wrapped in outter most braces to avoid
 // issues with OR chaining leading to unwated results
@@ -15,9 +17,19 @@ func (w *WherePredicate) ToSql() (string, []interface{}, error) {
 	return w.sql, w.params, nil
 }
 
-// String simply returns the query string
-func (w *WherePredicate) String() string {
+// Sql returns the underlying sql string
+func (w *WherePredicate) Sql() string {
 	return w.sql
+}
+
+// Parameters return the underlying parameters
+func (w *WherePredicate) Parameters() []interface{} {
+	return w.params
+}
+
+// String simply returns the query string and paremeters
+func (w *WherePredicate) String() string {
+	return fmt.Sprintf("%s (%+v)", w.sql, w.params)
 }
 
 // OrderByClause represents a order by clause
@@ -30,6 +42,11 @@ type OrderByClause struct {
 // satisfies sqlizer https://pkg.go.dev/github.com/masterminds/squirrel#Sqlizer
 func (o *OrderByClause) ToSql() (string, []interface{}, error) {
 	return o.sql, nil, nil
+}
+
+// Sql returns the underlying sql string
+func (w *OrderByClause) Sql() string {
+	return w.sql
 }
 
 // String simply returns the query string
