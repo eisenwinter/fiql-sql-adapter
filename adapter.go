@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	fq "github.com/eisenwinter/fiql-parser"
 )
@@ -125,11 +126,15 @@ func (t *whereBuilder) negotiateArgumentType(args *fq.ArgumentContext) (bool, er
 		break
 	case fq.ValueRecommendationDuration:
 		if t.isCompatibleType(timeType, exp) {
-			time, err := args.AsDuration()
+			duration, err := args.AsDuration()
 			if err != nil {
 				return false, err
 			}
-			t.params = append(t.params, time)
+			// we just convert the duration to a go time
+			// so we dont have to worry about any further driver issues
+			// with custom types
+			p := time.Now().UTC().Add(time.Duration(duration.AsMilliseconds()) * time.Microsecond)
+			t.params = append(t.params, p)
 			return false, nil
 		}
 		break

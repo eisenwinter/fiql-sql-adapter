@@ -94,14 +94,17 @@ func tagsFromStruct(s interface{}) FieldMapping {
 		if tag == "" || tag == "-" {
 			continue
 		}
-		alias := tag
-		//peek db tag from sqlx
-		// db := f.Tag.Get("db") // okay probably shouldnt touch those for now ...
+
+		parts := strings.Split(tag, ",")
+		alias := parts[0]
 		db := f.Name
-		if strings.Contains(tag, ",db:") {
-			s := strings.Split(tag, ",db:")
-			alias = s[0]
-			db = s[1]
+
+		if len(parts) > 1 {
+			for _, v := range parts[1:] {
+				if strings.HasPrefix(v, "db:") {
+					db = strings.TrimPrefix(v, "db:")
+				}
+			}
 		}
 		alias = strings.ToLower(alias)
 		m[alias] = Field{
