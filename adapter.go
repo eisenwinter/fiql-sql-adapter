@@ -133,7 +133,7 @@ func (t *whereBuilder) negotiateArgumentType(args *fq.ArgumentContext) (bool, er
 			// we just convert the duration to a go time
 			// so we dont have to worry about any further driver issues
 			// with custom types
-			p := time.Now().UTC().Add(time.Duration(duration.AsMilliseconds()) * time.Microsecond)
+			p := time.Now().UTC().Add(time.Duration(duration.AsMilliseconds()) * time.Millisecond)
 			t.params = append(t.params, p)
 			return false, nil
 		}
