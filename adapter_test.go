@@ -280,6 +280,21 @@ func TestFromStructWildCard(t *testing.T) {
 	assert.Equal(t, `("Tx" LIKE CONCAT('%',$1,'%'))`, s)
 }
 
+func TestFromStructWildCardSqlite(t *testing.T) {
+	adp := NewAdapterFor(&myFunnyRowStruct{}, WithDialectSQLite())
+	res, err := adp.Where("tx==*001020*")
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	s, _, err := res.ToSql()
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	assert.Equal(t, `("Tx" LIKE '%' || ? || '%')`, s)
+}
+
 func TestMappingBuilder(t *testing.T) {
 	b := NewMappingBuilder().AddStringMapping("columnA", "a").Build()
 	assert.Equal(t, FieldMapping{"a": Field{Db: "columnA", Alias: "a", Type: stringType}}, b)

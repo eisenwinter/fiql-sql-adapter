@@ -32,6 +32,15 @@ const backtickDelimiter delimiterStyle = "``"
 // noDelimiter simply means none
 const noDelimiter delimiterStyle = ""
 
+// concatSupport defines if the database has a concat function or another mean of concatinating strings
+type concatSupport string
+
+// concatFunctionSupported indicates that the database system supports the CONCAT(1..n) function
+const concatFunctionSupported concatSupport = "concat"
+
+// concatByPipesSupported inidicates the database uses the double pipe operator for string concatination
+const concatByPipesSupported concatSupport = "||"
+
 func delimitBuilder(style delimiterStyle, col string, sb *strings.Builder) {
 	switch style {
 	case angleBracketDelimiter:
@@ -70,6 +79,7 @@ func WithDialectMSSQL() func(*Adapter) {
 	return func(a *Adapter) {
 		a.delim = angleBracketDelimiter
 		a.paramStyle = atParamStyle
+		a.concat = concatFunctionSupported
 	}
 }
 
@@ -78,6 +88,7 @@ func WithDialectSQLite() func(*Adapter) {
 	return func(a *Adapter) {
 		a.delim = standardSqlDelimiter
 		a.paramStyle = standardParamStyle
+		a.concat = concatByPipesSupported
 	}
 }
 
@@ -86,6 +97,7 @@ func WithDialectPostgres() func(*Adapter) {
 	return func(a *Adapter) {
 		a.delim = standardSqlDelimiter
 		a.paramStyle = dollarParamStyle
+		a.concat = concatFunctionSupported
 	}
 }
 
@@ -94,6 +106,7 @@ func WithDialectMariaDB() func(*Adapter) {
 	return func(a *Adapter) {
 		a.delim = backtickDelimiter
 		a.paramStyle = standardParamStyle
+		a.concat = concatFunctionSupported
 	}
 }
 
@@ -102,6 +115,7 @@ func WithDialectSQL92() func(*Adapter) {
 	return func(a *Adapter) {
 		a.delim = standardSqlDelimiter
 		a.paramStyle = standardParamStyle
+		a.concat = concatFunctionSupported
 	}
 }
 
@@ -110,5 +124,6 @@ func WithDialectSQL92NoDelimiter() func(*Adapter) {
 	return func(a *Adapter) {
 		a.delim = noDelimiter
 		a.paramStyle = standardParamStyle
+		a.concat = concatFunctionSupported
 	}
 }

@@ -33,6 +33,7 @@ type Adapter struct {
 	parser     *fq.Parser
 	delim      delimiterStyle
 	paramStyle paramStyle
+	concat     concatSupport
 }
 
 type whereBuilder struct {
@@ -43,6 +44,7 @@ type whereBuilder struct {
 	fields       FieldMapping
 	delim        delimiterStyle
 	paramStyle   paramStyle
+	concat       concatSupport
 }
 
 func (t *whereBuilder) VisitExpressionEntered() { t.sb.WriteString("(") }
@@ -178,17 +180,31 @@ func (t *whereBuilder) VisitArgument(argumentCtx fq.ArgumentContext) {
 	}
 
 	if s && (argumentCtx.StartsWithWildcard() || argumentCtx.EndsWithWildcard()) {
-		t.sb.WriteString("CONCAT(")
+		if t.concat == concatFunctionSupported {
+			t.sb.WriteString("CONCAT(")
+		}
 	}
 	if s && argumentCtx.StartsWithWildcard() {
-		t.sb.WriteString("'%',")
+		if t.concat == concatFunctionSupported {
+			t.sb.WriteString("'%',")
+		} else {
+			t.sb.WriteString("'%' || ")
+		}
+
 	}
 	parameterBuilder(t.paramStyle, len(t.params), &t.sb)
 	if s && argumentCtx.EndsWithWildcard() {
-		t.sb.WriteString(",'%'")
+		if t.concat == concatFunctionSupported {
+			t.sb.WriteString(",'%'")
+		} else {
+			t.sb.WriteString(" || '%'")
+		}
+
 	}
 	if s && (argumentCtx.StartsWithWildcard() || argumentCtx.EndsWithWildcard()) {
-		t.sb.WriteString(")")
+		if t.concat == concatFunctionSupported {
+			t.sb.WriteString(")")
+		}
 	}
 
 }
@@ -205,6 +221,7 @@ func (a *Adapter) Where(query string) (*WherePredicate, error) {
 		errors:     make([]error, 0),
 		delim:      a.delim,
 		paramStyle: a.paramStyle,
+		concat:     a.concat,
 	}
 	ast.Accept(&wb)
 	if len(wb.errors) > 0 {
