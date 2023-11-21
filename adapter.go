@@ -109,7 +109,7 @@ func (t *whereBuilder) isCompatibleType(from, to reflect.Type) bool {
 
 func (t *whereBuilder) negotiateArgumentType(args *fq.ArgumentContext) (bool, error) {
 	exp := t.lastSelector.Type
-	if args.ValueRecommendation() == fq.ValueRecommendationString && exp == stringType {
+	if args.ValueRecommendation() == fq.ValueRecommendationString && isPointerCompatibleType(exp, stringType) {
 		//its safe to assume that string is a string
 		t.params = append(t.params, args.AsString())
 		return true, nil

@@ -25,6 +25,12 @@ type withDbtagStruct struct {
 	blub string
 }
 
+type tagsStringPointerStruct struct {
+	Test *string `fiql:"test"`
+	blah string  `fiql:"-"`
+	blub string
+}
+
 func TestTagsFromStruct(t *testing.T) {
 	tags := tagsFromStruct(tagsTestOnlyStruct{})
 	assert.Equal(t, FieldMapping(FieldMapping{"test": Field{Db: "Test", Alias: "test", Type: stringType}}), tags)
@@ -43,4 +49,9 @@ func TestDbTagsFromTimeStruct(t *testing.T) {
 func TestTagsFromPtrToStruct(t *testing.T) {
 	tags := tagsFromStruct(&tagsTestOnlyStruct{})
 	assert.Equal(t, FieldMapping{"test": Field{Db: "Test", Alias: "test", Type: stringType}}, tags)
+}
+
+func TestTagsFromPtrToStructWithStringPTr(t *testing.T) {
+	tags := tagsFromStruct(&tagsStringPointerStruct{})
+	assert.Equal(t, FieldMapping{"test": Field{Db: "Test", Alias: "test", Type: stringPtrType}}, tags)
 }

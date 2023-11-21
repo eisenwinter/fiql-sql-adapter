@@ -357,3 +357,23 @@ func TestInvalidDateCoercion(t *testing.T) {
 	_, err := adp.Where("cre==2022-91-91")
 	assert.Error(t, err)
 }
+
+type myFunnyPtrStruct struct {
+	FirstName *string `dbi:"first_name" fiql:"firstName,db:first_name"`
+}
+
+func TestWithStringPointerStruct(t *testing.T) {
+	adp := NewAdapterFor(&myFunnyPtrStruct{}, WithDialect(DialectSQLite))
+	res, err := adp.Where("firstName==Test")
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	s, args, err := res.ToSql()
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	assert.Equal(t, `("first_name" = ?)`, s)
+	assert.Equal(t, args[0], "Test")
+}

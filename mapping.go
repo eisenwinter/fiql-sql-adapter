@@ -12,6 +12,25 @@ var timeType = reflect.TypeOf(time.Time{})
 var float64Type = reflect.TypeOf(float64(0))
 var intType = reflect.TypeOf(int(0))
 
+var stringPtrType = reflect.PtrTo(stringType)
+var timePtrType = reflect.PtrTo(timeType)
+
+var float64PTrType = reflect.PtrTo(float64Type)
+var intPtrType = reflect.PtrTo(intType)
+
+func isPointerCompatibleType(actual reflect.Type, expected reflect.Type) bool {
+	if actual == expected {
+		return true
+	}
+	if reflect.PtrTo(actual) == expected {
+		return true
+	}
+	if actual == reflect.PtrTo(expected) {
+		return true
+	}
+	return false
+}
+
 // Field is a fiql field to database column mapping
 type Field struct {
 	Db    string
