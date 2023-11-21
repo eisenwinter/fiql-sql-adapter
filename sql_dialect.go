@@ -38,7 +38,7 @@ type concatSupport string
 // concatFunctionSupported indicates that the database system supports the CONCAT(1..n) function
 const concatFunctionSupported concatSupport = "concat"
 
-// concatByPipesSupported inidicates the database uses the double pipe operator for string concatination
+// concatByPipesSupported inidicates the database uses the double pipe operator for string concatenation
 const concatByPipesSupported concatSupport = "||"
 
 func delimitBuilder(style delimiterStyle, col string, sb *strings.Builder) {

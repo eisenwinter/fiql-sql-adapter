@@ -51,8 +51,8 @@ func (o *OrderByClause) ToSql() (string, []interface{}, error) {
 }
 
 // Sql returns the underlying sql string
-func (w *OrderByClause) Sql() string {
-	return w.sql
+func (o *OrderByClause) Sql() string {
+	return o.sql
 }
 
 // String simply returns the query string
