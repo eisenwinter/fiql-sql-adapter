@@ -327,8 +327,9 @@ func TestOrderByNoPrefix(t *testing.T) {
 	input := "a"
 	b := NewMappingBuilder().AddStringMapping("columnA", "a").Build()
 	p := NewAdapter(b, WithDialectPostgres())
-	_, err := p.OrderBy(input)
-	assert.Error(t, err)
+	res, err := p.OrderBy(input)
+	assert.NoError(t, err)
+	assert.Equal(t, `"columnA" ASC`, res.String())
 }
 
 func TestOrderByMixed(t *testing.T) {
@@ -428,4 +429,16 @@ func TestWithTableNameFromTag(t *testing.T) {
 	}
 	assert.Equal(t, `("kontakte"."first_name" = ?)`, s)
 	assert.Equal(t, args[0], "Test")
+}
+
+func TestOrderByMixedWithNatural(t *testing.T) {
+	input := "a;+b"
+	b := NewMappingBuilder().AddStringMapping("columnA", "a").AddFloatMapping("columnB", "b").Build()
+	p := NewAdapter(b, WithDialectMariaDB())
+	res, err := p.OrderBy(input)
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	assert.Equal(t, "`columnA` ASC, `columnB` ASC", res.String())
 }

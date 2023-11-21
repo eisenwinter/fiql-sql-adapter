@@ -244,7 +244,7 @@ func (a *Adapter) Where(query string) (*WherePredicate, error) {
 }
 
 // OrderBy generates a order by clause from a given query
-// this is no fiql but rather the format (+/-)ALIAS[;(+/-)ALIAS]*
+// this is no fiql but rather the format ([+|-|])ALIAS[;([+|-|])ALIAS]*
 func (a *Adapter) OrderBy(query string) (*OrderByClause, error) {
 	if query == "" {
 		return &OrderByClause{}, nil
@@ -252,17 +252,23 @@ func (a *Adapter) OrderBy(query string) (*OrderByClause, error) {
 	var sb strings.Builder
 	s := strings.Split(query, ";")
 	for i, v := range s {
-		if len(v) > 1 {
-			if f, ok := a.fields[strings.ToLower(v[1:])]; ok {
+		if len(v) > 0 {
+			prefixed := v[0] == '-' || v[0] == '+'
+			var fn string
+			if prefixed {
+				fn = strings.ToLower(v[1:])
+			} else {
+				fn = strings.ToLower(v)
+			}
+			if f, ok := a.fields[fn]; ok {
 				delimitBuilder(a.delim, f.Db, &sb)
-
-				if v[0] == '+' {
+				if v[0] != '-' {
 					sb.WriteString(" ASC")
 					if i != len(s)-1 {
 						sb.WriteString(", ")
 					}
 					continue
-				} else if v[0] == '-' {
+				} else {
 					sb.WriteString(" DESC")
 					if i != len(s)-1 {
 						sb.WriteString(", ")
