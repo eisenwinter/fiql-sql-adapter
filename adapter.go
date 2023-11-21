@@ -275,6 +275,15 @@ func (a *Adapter) OrderBy(query string) (*OrderByClause, error) {
 	return &OrderByClause{sql: sb.String()}, nil
 }
 
+// Update updates the given adapters supplied options
+// this may be used to change dialect or other specfics
+// with an already instanced adapater
+func (a *Adapter) Update(options ...func(*Adapter)) {
+	for _, o := range options {
+		o(a)
+	}
+}
+
 // NewAdapter returns a new fiql adapter for the given field mapping
 // use the MappingBuilder to create field mapping
 func NewAdapter(mapping FieldMapping, options ...func(*Adapter)) *Adapter {
