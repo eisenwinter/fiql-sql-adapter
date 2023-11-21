@@ -429,3 +429,13 @@ func TestWithTableNameFromTag(t *testing.T) {
 	assert.Equal(t, `("kontakte"."first_name" = ?)`, s)
 	assert.Equal(t, args[0], "Test")
 }
+
+func TestOrderByAscColumns(t *testing.T) {
+	input := "+a"
+	b := NewMappingBuilder().AddStringMapping("columnA", "a").Build()
+	p := NewAdapter(b, WithDialectPostgres())
+	res, err := p.OrderBy(input)
+	assert.NoError(t, err)
+	assert.Equal(t, res.Columns(), []string{"columnA"})
+	assert.Equal(t, `"columnA" ASC`, res.String())
+}

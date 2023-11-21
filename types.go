@@ -59,3 +59,9 @@ func (o *OrderByClause) Sql() string {
 func (o *OrderByClause) String() string {
 	return o.sql
 }
+
+// Query satisfies querier interface from ent
+// https://pkg.go.dev/entgo.io/ent@v0.12.4/dialect/sql#Querier
+func (o *OrderByClause) Query() (string, []any) {
+	return o.sql, []any{}
+}

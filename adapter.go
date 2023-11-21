@@ -255,6 +255,7 @@ func (a *Adapter) OrderBy(query string) (*OrderByClause, error) {
 		if len(v) > 1 {
 			if f, ok := a.fields[strings.ToLower(v[1:])]; ok {
 				delimitBuilder(a.delim, f.Db, &sb)
+
 				if v[0] == '+' {
 					sb.WriteString(" ASC")
 					if i != len(s)-1 {
