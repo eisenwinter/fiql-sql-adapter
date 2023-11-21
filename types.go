@@ -17,6 +17,12 @@ func (w *WherePredicate) ToSql() (string, []interface{}, error) {
 	return w.sql, w.params, nil
 }
 
+// Query satisfies querier interface from ent
+// https://pkg.go.dev/entgo.io/ent@v0.12.4/dialect/sql#Querier
+func (w *WherePredicate) Query() (string, []any) {
+	return w.sql, w.params
+}
+
 // Sql returns the underlying sql string
 func (w *WherePredicate) Sql() string {
 	return w.sql

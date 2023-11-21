@@ -2,7 +2,7 @@
 
 # fiql-sql-adapter
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/eisenwinter/fiql-sql-adapter)](https://goreportcard.com/report/github.com/eisenwinter/fiql-sql-adapter) [![Go](https://github.com/eisenwinter/fiql-sql-adapter/actions/workflows/go.yml/badge.svg)](https://github.com/eisenwinter/fiql-sql-adapter/actions/workflows/go.yml) [![GoDoc reference example](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/eisenwinter/fiql-sql-adapter)  [![Project Status: WIP - Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![Go Report Card](https://goreportcard.com/badge/github.com/eisenwinter/fiql-sql-adapter)](https://goreportcard.com/report/github.com/eisenwinter/fiql-sql-adapter) [![Go](https://github.com/eisenwinter/fiql-sql-adapter/actions/workflows/go.yml/badge.svg)](https://github.com/eisenwinter/fiql-sql-adapter/actions/workflows/go.yml) [![GoDoc reference example](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/eisenwinter/fiql-sql-adapter)  [![Project Status: WIP - Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip) [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
 golang fiql2sql adapter - early work in progress
 
@@ -32,10 +32,16 @@ This list represents the features I would like it to have once its done.
 - [ ] sophisticated type checks (as of now its rather crude with minimal type support)
 - [ ] value converters to convert fiql supplied arguments to the corresponding sql parameter
 - [ ] join and computed column handling - this is tricky and needs some more thought [^1]
-- [ ] [MAYBE] read struct tags from sqlx https://jmoiron.github.io/sqlx/ but I am not sure if that's a good idea
 
 
 [^1]: Right now this could be archived with a view but that's not what I am after.
+
+## Contributing
+
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue for further questions or recommendations.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 ## License
 

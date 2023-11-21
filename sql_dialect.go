@@ -74,6 +74,31 @@ func parameterBuilder(style paramStyle, len int, sb *strings.Builder) {
 	}
 }
 
+// Dialect constants
+const (
+	DialectMariaDB  = "maria"
+	DialectMySQL    = "mysql"
+	DialectMSSL     = "mssql"
+	DialectSQLite   = "sqlite3"
+	DialectPostgres = "postgres"
+)
+
+// WithDialect configures which dialect to be used
+func WithDialect(dialect string) func(*Adapter) {
+	switch dialect {
+	case DialectMariaDB:
+	case DialectMySQL:
+		return WithDialectMariaDB()
+	case DialectPostgres:
+		return WithDialectPostgres()
+	case DialectMSSL:
+		return WithDialectMSSQL()
+	case DialectSQLite:
+		return WithDialectSQLite()
+	}
+	return WithDialectSQL92()
+}
+
 // WithDialectMSSQL configures MSSQL delimiters and params
 func WithDialectMSSQL() func(*Adapter) {
 	return func(a *Adapter) {
