@@ -34,6 +34,7 @@ type Adapter struct {
 	delim      delimiterStyle
 	paramStyle paramStyle
 	concat     concatSupport
+	tableName  string
 }
 
 type whereBuilder struct {
@@ -45,6 +46,7 @@ type whereBuilder struct {
 	delim        delimiterStyle
 	paramStyle   paramStyle
 	concat       concatSupport
+	tableName    string
 }
 
 func (t *whereBuilder) VisitExpressionEntered() { t.sb.WriteString("(") }
@@ -61,6 +63,13 @@ func (t *whereBuilder) VisitOperator(operatorCtx fq.OperatorContext) {
 func (t *whereBuilder) VisitSelector(selectorCtx fq.SelectorContext) {
 	selector := selectorCtx.Selector()
 	if fi, ok := t.fields[strings.ToLower(selector)]; ok {
+		if fi.TablePrefix != "" {
+			delimitBuilder(t.delim, fi.TablePrefix, &t.sb)
+			t.sb.WriteRune('.')
+		} else if t.tableName != "" {
+			delimitBuilder(t.delim, t.tableName, &t.sb)
+			t.sb.WriteRune('.')
+		}
 		delimitBuilder(t.delim, fi.Db, &t.sb)
 		if selectorCtx.IsUnary() {
 			t.lastSelector = nil
@@ -222,6 +231,7 @@ func (a *Adapter) Where(query string) (*WherePredicate, error) {
 		delim:      a.delim,
 		paramStyle: a.paramStyle,
 		concat:     a.concat,
+		tableName:  a.tableName,
 	}
 	ast.Accept(&wb)
 	if len(wb.errors) > 0 {
@@ -283,4 +293,11 @@ func NewAdapterFor(typeDef interface{}, options ...func(*Adapter)) *Adapter {
 		o(adapter)
 	}
 	return adapter
+}
+
+// WithTableName creates an adapter that prefixes all columns with the given table name
+func WithTableName(tableName string) func(*Adapter) {
+	return func(a *Adapter) {
+		a.tableName = tableName
+	}
 }

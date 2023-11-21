@@ -377,3 +377,55 @@ func TestWithStringPointerStruct(t *testing.T) {
 	assert.Equal(t, `("first_name" = ?)`, s)
 	assert.Equal(t, args[0], "Test")
 }
+
+func TestWithTableName(t *testing.T) {
+	adp := NewAdapterFor(&myFunnyPtrStruct{}, WithDialect(DialectSQLite), WithTableName("contacts"))
+	res, err := adp.Where("firstName==Test")
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	s, args, err := res.ToSql()
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	assert.Equal(t, `("contacts"."first_name" = ?)`, s)
+	assert.Equal(t, args[0], "Test")
+}
+
+type myFunnyPtrOverrideStruct struct {
+	FirstName *string `dbi:"first_name" fiql:"firstName,db:kontakte.first_name"`
+}
+
+func TestWithTableNameOverridenFromTag(t *testing.T) {
+	adp := NewAdapterFor(&myFunnyPtrOverrideStruct{}, WithDialect(DialectSQLite), WithTableName("contacts"))
+	res, err := adp.Where("firstName==Test")
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	s, args, err := res.ToSql()
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	assert.Equal(t, `("kontakte"."first_name" = ?)`, s)
+	assert.Equal(t, args[0], "Test")
+}
+
+func TestWithTableNameFromTag(t *testing.T) {
+	adp := NewAdapterFor(&myFunnyPtrOverrideStruct{}, WithDialect(DialectSQLite))
+	res, err := adp.Where("firstName==Test")
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	s, args, err := res.ToSql()
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	assert.Equal(t, `("kontakte"."first_name" = ?)`, s)
+	assert.Equal(t, args[0], "Test")
+}

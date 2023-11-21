@@ -33,9 +33,10 @@ func isPointerCompatibleType(actual reflect.Type, expected reflect.Type) bool {
 
 // Field is a fiql field to database column mapping
 type Field struct {
-	Db    string
-	Alias string
-	Type  reflect.Type
+	Db          string
+	Alias       string
+	Type        reflect.Type
+	TablePrefix string
 }
 
 // FieldMapping is a table mapping of fields
@@ -117,19 +118,26 @@ func tagsFromStruct(s interface{}) FieldMapping {
 		parts := strings.Split(tag, ",")
 		alias := parts[0]
 		db := f.Name
-
+		tablePrefix := ""
 		if len(parts) > 1 {
 			for _, v := range parts[1:] {
 				if strings.HasPrefix(v, "db:") {
 					db = strings.TrimPrefix(v, "db:")
+					splitTablePrefix := strings.SplitN(db, ".", 2)
+					if len(splitTablePrefix) == 2 {
+						tablePrefix = splitTablePrefix[0]
+						db = splitTablePrefix[1]
+					}
 				}
 			}
 		}
+
 		alias = strings.ToLower(alias)
 		m[alias] = Field{
-			Alias: alias,
-			Type:  f.Type,
-			Db:    db,
+			Alias:       alias,
+			Type:        f.Type,
+			Db:          db,
+			TablePrefix: tablePrefix,
 		}
 	}
 	return m
