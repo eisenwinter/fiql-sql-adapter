@@ -296,6 +296,7 @@ func NewAdapterFor(typeDef interface{}, options ...func(*Adapter)) *Adapter {
 }
 
 // WithTableName creates an adapter that prefixes all columns with the given table name
+// if a struct tag defines a table prefix it will take precedence over the supplied adapter table name
 func WithTableName(tableName string) func(*Adapter) {
 	return func(a *Adapter) {
 		a.tableName = tableName
